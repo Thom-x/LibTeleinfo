@@ -192,154 +192,6 @@ void LedRGBOFF(void)
 
 #endif
 
-
-/* ======================================================================
-Function: ADPSCallback 
-Purpose : called by library when we detected a ADPS on any phased
-Input   : phase number 
-            0 for ADPS (monophase)
-            1 for ADIR1 triphase
-            2 for ADIR2 triphase
-            3 for ADIR3 triphase
-Output  : - 
-Comments: should have been initialised in the main sketch with a
-          tinfo.attachADPSCallback(ADPSCallback())
-====================================================================== */
-void ADPSCallback(uint8_t phase)
-{
-  // Monophasé
-  if (phase == 0 ) {
-    Debugln(F("ADPS"));
-  } else {
-    Debug(F("ADPS Phase "));
-    Debugln('0' + phase);
-  }
-}
-
-/* ======================================================================
-Function: DataCallback 
-Purpose : callback when we detected new or modified data received
-Input   : linked list pointer on the concerned data
-          value current state being TINFO_VALUE_ADDED/TINFO_VALUE_UPDATED
-Output  : - 
-Comments: -
-====================================================================== */
-void DataCallback(ValueList * me, uint8_t flags)
-{
-
-  // This is for simulating ADPS during my tests
-  // ===========================================
-  /*
-  static uint8_t test = 0;
-  // Each new/updated values
-  if (++test >= 20) {
-    test=0;
-    uint8_t anotherflag = TINFO_FLAGS_NONE;
-    ValueList * anotherme = tinfo.addCustomValue("ADPS", "46", &anotherflag);
-
-    // Do our job (mainly debug)
-    DataCallback(anotherme, anotherflag);
-  }
-  Debugf("%02d:",test);
-  */
-  // ===========================================
-  
-/*
-  // Do whatever you want there
-  Debug(me->name);
-  Debug('=');
-  Debug(me->value);
-  
-  if ( flags & TINFO_FLAGS_NOTHING ) Debug(F(" Nothing"));
-  if ( flags & TINFO_FLAGS_ADDED )   Debug(F(" Added"));
-  if ( flags & TINFO_FLAGS_UPDATED ) Debug(F(" Updated"));
-  if ( flags & TINFO_FLAGS_EXIST )   Debug(F(" Exist"));
-  if ( flags & TINFO_FLAGS_ALERT )   Debug(F(" Alert"));
-
-  Debugln();
-*/
-}
-
-/* ======================================================================
-Function: NewFrame 
-Purpose : callback when we received a complete teleinfo frame
-Input   : linked list pointer on the concerned data
-Output  : - 
-Comments: -
-====================================================================== */
-void NewFrame(ValueList * me) 
-{
-  char buff[32];
-
-  // Light the RGB LED 
-  if ( config.config & CFG_RGB_LED) {
-    LedRGBON(COLOR_GREEN);
-    
-    // led off after delay
-    rgb_ticker.once_ms( (uint32_t) BLINK_LED_MS, LedOff, (int) RGB_LED_PIN);
-  }
-
-  sprintf_P( buff, PSTR("New Frame (%ld Bytes free)"), ESP.getFreeHeap() );
-  Debugln(buff);
-}
-
-/* ======================================================================
-Function: NewFrame 
-Purpose : callback when we received a complete teleinfo frame
-Input   : linked list pointer on the concerned data
-Output  : - 
-Comments: it's called only if one data in the frame is different than
-          the previous frame
-====================================================================== */
-void UpdatedFrame(ValueList * me)
-{
-  char buff[32];
-  
-  // Light the RGB LED (purple)
-  if ( config.config & CFG_RGB_LED) {
-    LedRGBON(COLOR_MAGENTA);
-
-    // led off after delay
-    rgb_ticker.once_ms(BLINK_LED_MS, LedOff, RGB_LED_PIN);
-  }
-
-  sprintf_P( buff, PSTR("Updated Frame (%ld Bytes free)"), ESP.getFreeHeap() );
-  Debugln(buff);
-
-/*
-  // Got at least one ?
-  if (me) {
-    WiFiUDP myudp;
-    IPAddress ip = WiFi.localIP();
-
-    // start UDP server
-    myudp.begin(1201);
-    ip[3] = 255;
-
-    // transmit broadcast package
-    myudp.beginPacket(ip, 1201);
-
-    // start of frame
-    myudp.write(TINFO_STX);
-
-    // Loop thru the node
-    while (me->next) {
-      me = me->next;
-      // prepare line and write it
-      sprintf_P( buff, PSTR("%s %s %c\n"),me->name, me->value, me->checksum );
-      myudp.write( buff);
-    }
-
-    // End of frame
-    myudp.write(TINFO_ETX);
-    myudp.endPacket();
-    myudp.flush();
-
-  }
-*/
-}
-
-
 /* ======================================================================
 Function: ResetConfig
 Purpose : Set configuration to default values
@@ -390,9 +242,7 @@ int WifiHandleConn(boolean setup = false)
   if (setup) {
 
     DebuglnF("========== SDK Saved parameters Start"); 
-    WiFi.printDiag(DEBUG_SERIAL);
     DebuglnF("========== SDK Saved parameters End"); 
-    Debugflush();
 
     // no correct SSID
     if (!*config.ssid) {
@@ -424,7 +274,6 @@ int WifiHandleConn(boolean setup = false)
 
       DebugF("Connecting to: "); 
       Debug(config.ssid);
-      Debugflush();
 
       // Do wa have a PSK ?
       if (*config.psk) {
@@ -432,12 +281,10 @@ int WifiHandleConn(boolean setup = false)
         Debug(F(" with key '"));
         Debug(config.psk);
         Debug(F("'..."));
-        Debugflush();
         WiFi.begin(config.ssid, config.psk);
       } else {
         // Open network
         Debug(F("unsecure AP"));
-        Debugflush();
         WiFi.begin(config.ssid);
       }
 
@@ -468,7 +315,6 @@ int WifiHandleConn(boolean setup = false)
     } else {
       char ap_ssid[32];
       DebuglnF("Error!");
-      Debugflush();
 
       // STA+AP Mode without connected to STA, autoconnect will search
       // other frequencies while trying to connect, this is causing issue
@@ -481,7 +327,6 @@ int WifiHandleConn(boolean setup = false)
       strcpy(ap_ssid, config.host );
       DebugF("Switching to AP ");
       Debugln(ap_ssid);
-      Debugflush();
 
       // protected network
       if (*config.ap_psk) {
@@ -535,7 +380,7 @@ void setup()
 {
   char buff[32];
   boolean reset_config = true;
-
+  WiFi.disconnect(true);
   // Set CPU speed to 160MHz
   system_update_cpu_freq(160);
 
@@ -553,12 +398,11 @@ void setup()
   // Init the serial 1, Our Debug Serial TXD0
   // note this serial can only transmit, just 
   // enough for debugging purpose
-  DEBUG_SERIAL.begin(115200);
+  //DEBUG_SERIAL.begin(9600);
   Debugln(F("\r\n\r\n=============="));
   Debug(F("WifInfo V"));
   Debugln(F(WIFINFO_VERSION));
   Debugln();
-  Debugflush();
 
   // Clear our global flags
   config.config = 0;
@@ -571,7 +415,6 @@ void setup()
   DebugF(" (emoncms=");   Debug(sizeof(_emoncms));
   DebugF("  jeedom=");   Debug(sizeof(_jeedom));
   Debugln(')');
-  Debugflush();
 
   // Check File system init 
   if (!SPIFFS.begin())
@@ -639,12 +482,6 @@ void setup()
 
   ArduinoOTA.onError([](ota_error_t error) {
     LedRGBON(COLOR_RED);
-    Debugf("Update Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) DebuglnF("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) DebuglnF("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) DebuglnF("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) DebuglnF("Receive Failed");
-    else if (error == OTA_END_ERROR) DebuglnF("End Failed");
     ESP.restart(); 
   });
 
@@ -655,6 +492,7 @@ void setup()
   server.on("/config_form.json", handleFormConfig);
   server.on("/json", sendJSON);
   server.on("/tinfo.json", tinfoJSONTable);
+  server.on("/ha.json", haJSONTable);
   server.on("/system.json", sysJSONTable);
   server.on("/config.json", confJSONTable);
   server.on("/spiffs.json", spiffsJSONTable);
@@ -707,10 +545,6 @@ void setup()
 
       } else if(upload.status == UPLOAD_FILE_END) {
         //true to set the size to the current progress
-        if(Update.end(true)) 
-          Debugf("Update Success: %u\nRebooting...\n", upload.totalSize);
-        else 
-          Update.printError(Serial1);
 
         LedRGBOFF();
 
@@ -742,20 +576,10 @@ void setup()
   // avoid conflict when flashing, this is why
   // we swap RXD1/RXD1 to RXD2/TXD2 
   // Note that TXD2 is not used teleinfo is receive only
-  #ifdef DEBUG_SERIAL1
-    Serial.begin(1200, SERIAL_7E1);
-    Serial.swap();
-  #endif
-
-  // Init teleinfo
-  tinfo.init();
-
-  // Attach the callback we need
-  // set all as an example
-  tinfo.attachADPS(ADPSCallback);
-  tinfo.attachData(DataCallback);
-  tinfo.attachNewFrame(NewFrame);
-  tinfo.attachUpdatedFrame(UpdatedFrame);
+  //#ifdef DEBUG_SERIAL1
+    Serial.begin(9600);
+    //Serial.swap();
+  //#endif
 
   //webSocket.begin();
   //webSocket.onEvent(webSocketEvent);
@@ -814,4 +638,3 @@ void loop()
 
   //delay(10);
 }
-

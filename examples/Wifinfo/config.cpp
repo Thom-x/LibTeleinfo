@@ -153,11 +153,7 @@ bool saveConfig (void)
   ret_code = readConfig(false);
   
   Debug(F("Write config "));
-  
-  if (ret_code)
-    Debugln(F("OK!"));
-  else
-    Debugln(F("Error!"));
+
 
   //eepromDump(32);
   
@@ -202,4 +198,3 @@ void showConfig()
   DebugF("compteur :"); Debugln(config.jeedom.adco); 
   DebugF("freq     :"); Debugln(config.jeedom.freq); 
 }
-

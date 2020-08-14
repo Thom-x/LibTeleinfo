@@ -265,7 +265,86 @@ void formatNumberJSON( String &response, char * value)
     }
   }
 }
+void haJSONTable(void)
+{
+  ValueList * me = tinfo.getList();
+  String response = "";
 
+  // Just to debug where we are
+  Debug(F("Serving /tinfo page...\r\n"));
+
+  // Got at least one ?
+  if (me) {
+    uint8_t index=0;
+
+    boolean first_item = true;
+    // Json start
+    response += F("{\r\n");
+
+    // Loop thru the node
+    while (me->next) {
+
+      // we're there
+      ESP.wdtFeed();
+
+      // go to next node
+      me = me->next;
+
+      // First item do not add , separator
+      if (first_item)
+        first_item = false;
+      else
+        response += F(",\r\n");
+
+/*
+      Debug(F("(")) ;
+      Debug(++index) ;
+      Debug(F(") ")) ;
+
+      if (me->name) Debug(me->name) ;
+      else Debug(F("NULL")) ;
+
+      Debug(F("=")) ;
+
+      if (me->value) Debug(me->value) ;
+      else Debug(F("NULL")) ;
+
+      Debug(F(" '")) ;
+      Debug(me->checksum) ;
+      Debug(F("' ")); 
+
+      // Flags management
+      if ( me->flags) {
+        Debug(F("Flags:0x")); 
+        Debugf("%02X => ", me->flags); 
+        if ( me->flags & TINFO_FLAGS_EXIST)
+          Debug(F("Exist ")) ;
+        if ( me->flags & TINFO_FLAGS_UPDATED)
+          Debug(F("Updated ")) ;
+        if ( me->flags & TINFO_FLAGS_ADDED)
+          Debug(F("New ")) ;
+      }
+
+      Debugln() ;
+*/
+      response += F("\"");
+      response +=  me->name ;
+      response += F("\":\"");
+      response += me->value;
+      response += F("\"") ;
+
+    }
+   // Json end
+   response += F("\r\n}");
+
+  } else {
+    Debugln(F("sending 404..."));
+    server.send ( 404, "text/plain", "No data" );
+  }
+  Debug(F("sending..."));
+  server.send ( 200, "text/json", response );
+  Debugln(F("OK!"));
+}
 
 /* ======================================================================
 Function: tinfoJSONTable 
@@ -341,12 +420,7 @@ void tinfoJSONTable(void)
       response +=  me->name ;
       response += F("\", \"va\":\"") ;
       response += me->value;
-      response += F("\", \"ck\":\"") ;
-      if (me->checksum == '"' || me->checksum == '\\' || me->checksum == '/')
-        response += '\\';
-      response += (char) me->checksum;
-      response += F("\", \"fl\":");
-      response += me->flags ;
+      response += F("\"") ;
       response += '}' ;
 
     }
@@ -809,4 +883,3 @@ void handleNotFound(void)
   // Led off
   LedBluOFF();
 }
-

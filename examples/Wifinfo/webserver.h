@@ -41,6 +41,7 @@ void handleRoot(void);
 void handleFormConfig(void) ;
 void handleNotFound(void);
 void tinfoJSONTable(void);
+void haJSONTable(void);
 void getSysJSONData(String & r);
 void sysJSONTable(void);
 void getConfJSONData(String & r);

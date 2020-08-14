@@ -46,9 +46,9 @@ extern "C" {
 #include "config.h"
 
 
-#define DEBUG
-#define DEBUG_SERIAL	Serial1
-#define DEBUG_SERIAL1	
+//#define DEBUG
+//#define DEBUG_SERIAL	Serial1
+//#define DEBUG_SERIAL1	
 
 #define WIFINFO_VERSION "1.0.1"
 
@@ -133,4 +133,3 @@ void Task_emoncms();
 void Task_jeedom();
 
 #endif
-
